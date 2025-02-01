@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Grok + ElevenLabs TTS Demo</title>
+</head>
+<body>
+  <h1>Click Button to Generate TTS & Tweet</h1>
+
+  <button id="ttsButton">Copy</button>
+
+  <script>
+    document.getElementById('ttsButton').addEventListener('click', async () => {
+      try {
+        // 1) Relative fetch => calls http://localhost:5000/generate-tts
+        const response = await fetch('/generate-tts');
+        if (!response.ok) {
+          console.error("Error fetching TTS:", response.status, response.statusText);
+          alert("Error fetching TTS. Check console or Flask logs.");
+          return;
+        }
+
+        // 2) Convert response to an audio Blob
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+
+        // 3) Once audio starts, open Twitter in a new tab
+        audio.onplay = () => {
+          const tweetText = "Just generated a brand new TTS line via Grok & ElevenLabs!";
+          const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+          window.open(twitterUrl, '_blank');
+        };
+
+        // 4) Play the audio
+        audio.play();
+
+      } catch (err) {
+        console.error("Error calling generate-tts:", err);
+        alert("Error calling generate-tts. See console.");
+      }
+    });
+  </script>
+</body>
+</html>
