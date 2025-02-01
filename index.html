@@ -1,45 +1,94 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Grok + ElevenLabs TTS Demo</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOR - TTS Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #loading {
+            display: none;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
-  <h1>Click Button to Generate TTS & Tweet</h1>
+    <div class="container">
+        <h1>JOR - Click to Generate TTS & Tweet</h1>
+        <button id="ttsButton">Generate TTS</button>
+        <p id="loading">Generating audio... Please wait.</p>
+    </div>
 
-  <button id="ttsButton">Copy</button>
+    <script>
+        document.getElementById('ttsButton').addEventListener('click', async () => {
+            const loadingText = document.getElementById('loading');
+            loadingText.style.display = 'block';
+            try {
+                // Fetch the generated TTS audio from Flask
+                const response = await fetch('/generate-tts');
+                if (!response.ok) {
+                    console.error("Error fetching TTS:", response.status, response.statusText);
+                    alert("Error fetching TTS. Check the server logs.");
+                    loadingText.style.display = 'none';
+                    return;
+                }
 
-  <script>
-    document.getElementById('ttsButton').addEventListener('click', async () => {
-      try {
-        // 1) Relative fetch => calls http://localhost:5000/generate-tts
-        const response = await fetch('/generate-tts');
-        if (!response.ok) {
-          console.error("Error fetching TTS:", response.status, response.statusText);
-          alert("Error fetching TTS. Check console or Flask logs.");
-          return;
-        }
+                // Convert response to an audio Blob
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
 
-        // 2) Convert response to an audio Blob
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
+                // When audio starts playing, open Twitter
+                audio.onplay = () => {
+                    const tweetText = "Just generated a brand new TTS line via JOR! 🚀🎙️";
+                    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+                    window.open(twitterUrl, '_blank');
+                };
 
-        // 3) Once audio starts, open Twitter in a new tab
-        audio.onplay = () => {
-          const tweetText = "Just generated a brand new TTS line via Grok & ElevenLabs!";
-          const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-          window.open(twitterUrl, '_blank');
-        };
+                // Play audio
+                audio.play();
+                audio.onended = () => {
+                    loadingText.style.display = 'none';
+                };
 
-        // 4) Play the audio
-        audio.play();
-
-      } catch (err) {
-        console.error("Error calling generate-tts:", err);
-        alert("Error calling generate-tts. See console.");
-      }
-    });
-  </script>
+            } catch (err) {
+                console.error("Error calling generate-tts:", err);
+                alert("Error calling generate-tts. See console for details.");
+                loadingText.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
